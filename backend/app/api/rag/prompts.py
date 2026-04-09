@@ -11,7 +11,10 @@ def get_chat_prompt(user_input: str, history: List = [], context: str = None) ->
         # "DO NOT provide information which is not present on the Retrieved Context. "
         # "If there is no information about the question on the context just say 'I do not know about it'. "
         # "Provide precise response."
-        "Generate response in markdown."
+        "Generate response in markdown. "
+        "You will be provided with snippets of Retrieved Context labeled like 'Document [1]:'. "
+        "If you use information from a specific Document, you MUST place its bracketed number at the end of the sentence (e.g., 'The sky is blue [1].'). "
+        "DO NOT generate a 'Sources:' list yourself. Just insert the correct bracket numbers inline."
     )
 
     if context:

@@ -25,7 +25,7 @@ class Retriever:
             raise RuntimeError(f"Retriever initialization failed: {str(e)}") from e
         
   
-    def retrieve(self, query: str) -> str:
+    def retrieve(self, query: str) -> tuple[str, List[str]]:
         """
         Retrieve relevant documents based on the query using the vector store.
 
@@ -48,8 +48,8 @@ class Retriever:
             results = self.vector_store.query(query)
             logger.info(f"Retrieved {len(results)} documents")
             
-            context = self.prepare_context(results)
-            return context                      
+            context, url_map = self.prepare_context(results)
+            return context, url_map
         except Exception as e:
             logger.error(f"Failed to retrieve documents for query '{query}': {str(e)}")
             raise RuntimeError(f"Document retrieval failed: {str(e)}") from e
@@ -161,7 +161,7 @@ class Retriever:
             logger.error(f"Failed to update documents: {str(e)}")
             raise RuntimeError(f"Document update failed: {str(e)}") from e
 
-    def create_documents(self, text: str) -> List[Document]:
+    def create_documents(self, text: str, source_url: str = "unknown") -> List[Document]:
         """
         Split text into documents using the text splitter, ensuring no empty strings.
 
@@ -187,7 +187,7 @@ class Retriever:
         try:
             texts = self.text_splitter.split_text(text)
             documents = [
-                Document(page_content=chunk, metadata={"source": "input_text"})
+                Document(page_content=chunk, metadata={"source": source_url})
                 for chunk in texts if chunk.strip()
             ]
             if not documents:
@@ -249,7 +249,7 @@ class Retriever:
             documents (List[Document]): List of Document objects.
 
         Returns:
-            str: Concatenated string of document contents.
+            tuple[str, dict]: Concatenated string of document contents and a map of {index: URL}.
 
         Raises:
             ValueError: If documents list is empty or contains invalid entries.
@@ -259,18 +259,25 @@ class Retriever:
             raise ValueError("Documents must be a non-empty list of Document objects")
 
         context = ""
+        url_map = {}
+        idx = 1
         for _doc in documents:
             doc, score = _doc
             if not isinstance(doc, Document):
                 logger.error(f"Invalid document structure: {doc}")
                 logger.info(f"Document type on issue on context preparing: {type(doc)}")
                 continue
-            context += doc.page_content + "\n\n"
+            source_url = doc.metadata.get("source", "unknown")
+            if source_url != "unknown":
+                url_map[str(idx)] = source_url
+            
+            context += f"Document [{idx}]:\n{doc.page_content}\n\n"
+            idx += 1
         
         if not context:
             logger.warning("No valid content found in provided documents")
-            return "No relevant documents found related this query."
+            return "No relevant documents found related this query.", {}
 
         logger.info(f"Prepared context with {len(context)} characters")
-        return context
+        return context, url_map
     

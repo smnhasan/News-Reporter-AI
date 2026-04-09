@@ -62,7 +62,9 @@ async def async_real_stream_generator(query: str):
         # Run synchronous parts in threadpool to not block the loop
         loop = asyncio.get_event_loop()
         standalone_query = await loop.run_in_executor(None, pipeline._generate_standalone_query, query)
-        context = await loop.run_in_executor(None, pipeline._retrieve_context, standalone_query)
+        context_tuple = await loop.run_in_executor(None, pipeline._retrieve_context, standalone_query)
+        context = context_tuple[0]
+        url_map = context_tuple[1]
         from .rag.prompts import get_chat_prompt
         prompt = get_chat_prompt(query, history=pipeline.history, context=context)
 
@@ -101,6 +103,19 @@ async def async_real_stream_generator(query: str):
                                     await asyncio.sleep(0.03)  # Visual ticker delay
                         except json.JSONDecodeError:
                             continue
+
+        import re
+        cited_indices = set(re.findall(r'\[(\d+)\]', full_response))
+        cited_urls = set()
+        for idx in cited_indices:
+            if idx in url_map:
+                cited_urls.add(url_map[idx])
+        
+        if cited_urls:
+            sources_text = "\n\n**Sources:**\n" + "\n".join([f"- {u}" for u in cited_urls])
+            full_response += sources_text
+            safe_sources = sources_text.replace("\n", "\\n")
+            yield f"data: {safe_sources}\n\n"
 
         await loop.run_in_executor(None, pipeline._update_history, query, full_response)
             

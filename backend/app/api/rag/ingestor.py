@@ -169,7 +169,7 @@ class Ingestor:
                 continue
 
             try:
-                docs = self.retriever.create_documents(str(text))
+                docs = self.retriever.create_documents(str(text), source_url=url)
             except Exception as e:
                 logger.exception("Failed to create documents for url=%s: %s", url, e)
                 continue

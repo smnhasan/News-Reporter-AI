@@ -19,11 +19,11 @@ class Pipeline:
         print(f"Standalone Query: {standalone_query}")
         return standalone_query
 
-    def _retrieve_context(self, standalone_query: str) -> str:
+    def _retrieve_context(self, standalone_query: str) -> tuple[str, dict]:
         """Retrieve context using the retriever."""
-        context = self.retriever.retrieve(standalone_query)
-        print(f"Retrieved context: {context}")
-        return context
+        context, url_map = self.retriever.retrieve(standalone_query)
+        print(f"Retrieved context: {context}\nURL Map: {url_map}")
+        return context, url_map
 
     def _generate_response(self, query: str, context: str) -> str:
         """Generate assistant response based on query, history, and retrieved context."""
@@ -43,15 +43,16 @@ class Pipeline:
     def run(self, query: str) -> str:
         """Run the full RAG pipeline for a given user query."""
         standalone_query = self._generate_standalone_query(query)
-        context = self._retrieve_context(standalone_query)
+        context, urls = self._retrieve_context(standalone_query)
         response = self._generate_response(query, context)
+        
         self._update_history(query, response)
         return response
 
     def stream(self, query: str):
         """Run the full RAG pipeline and yield the response as a stream."""
         standalone_query = self._generate_standalone_query(query)
-        context = self._retrieve_context(standalone_query)
+        context, urls = self._retrieve_context(standalone_query)
         prompt = get_chat_prompt(query, history=self.history, context=context)
         
         full_response = ""
