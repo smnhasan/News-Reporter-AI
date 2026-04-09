@@ -1,0 +1,25 @@
+# Core server
+fastapi>=0.111.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.0.0
+pydantic-settings>=2.0.0
+
+# LLM backend
+# Install with CUDA support (adjust whl URL for your CUDA version):
+# pip install llama-cpp-python --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu122
+llama-cpp-python>=0.2.77
+
+# Model download
+huggingface-hub>=0.22.0
+
+# Embedding models
+sentence-transformers>=2.7.0
+InstructorEmbedding>=1.0.1
+torch>=2.1.0
+
+# Ngrok (optional — only needed when USE_NGROK=true)
+pyngrok>=7.0.0
+
+# Utilities
+numpy>=1.26.0
+requests>=2.31.0
