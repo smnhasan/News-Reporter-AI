@@ -1,25 +1,23 @@
 """
-Entry point for the GPT-OSS embedding / chat server.
+main.py
+Entrypoint — loads models, builds the FastAPI app, starts uvicorn,
+and optionally creates an ngrok tunnel.
 
 Usage
 -----
-  # Localhost only (default):
-  python main.py
-
-  # With ngrok:
-  USE_NGROK=true NGROK_AUTHTOKEN=<token> python main.py
-
-  # Or configure via .env (copy .env.example → .env):
-  python main.py
+  python main.py                                        # localhost (default)
+  USE_NGROK=true NGROK_AUTHTOKEN=<tok> python main.py  # ngrok tunnel
+  uvicorn app:app --host 0.0.0.0 --port 8000           # direct uvicorn (no ngrok)
 """
 
-import threading
-import time
 import logging
 import sys
+import threading
+import time
 
 import uvicorn
 
+from app    import create_app
 from config import settings
 from server import CombinedServer
 from tunnel import NgrokTunnelManager
@@ -27,8 +25,10 @@ from tunnel import NgrokTunnelManager
 logger = logging.getLogger(__name__)
 
 
-def print_banner(base_url: str, via_ngrok: bool) -> None:
-    sep = "=" * 65
+# ── Startup banner ────────────────────────────────────────────────────────────
+
+def _print_banner(base_url: str, via_ngrok: bool) -> None:
+    sep  = "=" * 65
     mode = "ngrok tunnel" if via_ngrok else "localhost"
     print(f"\n{sep}")
     print(f"  GPT-OSS-20B + Multilingual-E5 + Instructor-Large  [{mode}]")
@@ -47,11 +47,11 @@ def print_banner(base_url: str, via_ngrok: bool) -> None:
     print(f"{sep}\n")
 
 
+# ── Main ──────────────────────────────────────────────────────────────────────
+
 def main() -> None:
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s  %(levelname)s  %(message)s",
-    )
+    from logger import setup_logging
+    setup_logging()
 
     print("=" * 65)
     print("  Initialising GPT-OSS-20B + E5 + Instructor-Large Server")
@@ -59,32 +59,21 @@ def main() -> None:
 
     # ── Load models ───────────────────────────────────────────────────────────
     print("\n[1/2] Downloading & loading models (may take a few minutes)...")
-    combined = CombinedServer(
-        llm_model_name=settings.llm_model_repo,
-        llm_model_file=settings.llm_model_file,
-        n_ctx=settings.n_ctx,
-        n_gpu_layers=settings.n_gpu_layers,
-        max_concurrent_requests=settings.max_requests,
-    )
+    combined_server = CombinedServer()
+    app = create_app(combined_server)
 
     # ── Start uvicorn in a background thread ──────────────────────────────────
     print(f"\n[2/2] Starting FastAPI server on {settings.host}:{settings.port}...")
 
     def _run_uvicorn():
-        uvicorn.run(
-            combined.app,
-            host=settings.host,
-            port=settings.port,
-            log_level="info",
-        )
+        uvicorn.run(app, host=settings.host, port=settings.port, log_level="info")
 
     server_thread = threading.Thread(target=_run_uvicorn, daemon=True)
     server_thread.start()
-
-    # Give uvicorn a moment to bind
-    time.sleep(4)
+    time.sleep(4)   # wait for uvicorn to bind
 
     # ── Ngrok (optional) ──────────────────────────────────────────────────────
+    tunnel_mgr: NgrokTunnelManager | None = None
     if settings.use_ngrok:
         tunnel_mgr = NgrokTunnelManager()
         tunnel_mgr.setup_auth(settings.ngrok_authtoken)
@@ -92,26 +81,21 @@ def main() -> None:
 
         if not public_url:
             logger.error("Failed to create ngrok tunnel. Falling back to localhost.")
-            base_url   = f"http://localhost:{settings.port}"
-            via_ngrok  = False
+            base_url  = f"http://localhost:{settings.port}"
+            via_ngrok = False
         else:
             time.sleep(2)
-            if tunnel_mgr.test_tunnel():
-                base_url  = public_url
-                via_ngrok = True
-            else:
-                logger.warning("Tunnel health check failed — server may still be starting.")
-                base_url  = public_url
-                via_ngrok = True
+            tunnel_mgr.test_tunnel()   # logs result; proceed regardless
+            base_url  = public_url
+            via_ngrok = True
     else:
-        tunnel_mgr = None
-        base_url   = f"http://localhost:{settings.port}"
-        via_ngrok  = False
+        base_url  = f"http://localhost:{settings.port}"
+        via_ngrok = False
 
-    print_banner(base_url, via_ngrok)
-
-    # ── Block main thread (keep process alive) ────────────────────────────────
+    _print_banner(base_url, via_ngrok)
     print("  Server is running. Press Ctrl+C to stop.\n")
+
+    # ── Block — keep the process alive ────────────────────────────────────────
     try:
         while True:
             time.sleep(30)
