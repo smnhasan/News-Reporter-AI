@@ -19,7 +19,7 @@ export default function ChatBox() {
       id: '1',
       text: "Hello! I'm News Reporter AI. I can verify news and rumors by streaming responses from credible sources. Ask me about recent events or rumors you want to confirm!",
       isBot: true,
-      timestamp: new Date()
+      timestamp: new Date('2026-01-01T00:00:00Z')
     }
   ])
   const [inputText, setInputText] = useState('')
@@ -66,11 +66,12 @@ export default function ChatBox() {
           firstTokenReceived = true
         }
 
-        // Append token with a space for proper word spacing
+        // Decode escaped newlines and append token exactly as emitted
+        const decodedToken = token.replace(/\\n/g, "\n");
         setMessages(prev =>
           prev.map(msg =>
             msg.id === botMessageId
-              ? { ...msg, text: msg.text + token + " " }
+              ? { ...msg, text: msg.text + decodedToken }
               : msg
           )
         )

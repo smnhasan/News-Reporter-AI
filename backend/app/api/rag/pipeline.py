@@ -28,6 +28,8 @@ class Pipeline:
     def _generate_response(self, query: str, context: str) -> str:
         """Generate assistant response based on query, history, and retrieved context."""
         prompt = get_chat_prompt(query, history=self.history, context=context)
+        print(f'PROMPT:>>>\n{prompt}\n')
+        print('='*100)
         response = self.llm.generate_response(prompt)
         return response
 
@@ -45,4 +47,17 @@ class Pipeline:
         response = self._generate_response(query, context)
         self._update_history(query, response)
         return response
+
+    def stream(self, query: str):
+        """Run the full RAG pipeline and yield the response as a stream."""
+        standalone_query = self._generate_standalone_query(query)
+        context = self._retrieve_context(standalone_query)
+        prompt = get_chat_prompt(query, history=self.history, context=context)
+        
+        full_response = ""
+        for chunk in self.llm.stream_response(prompt):
+            full_response += chunk
+            yield chunk
+            
+        self._update_history(query, full_response)
 

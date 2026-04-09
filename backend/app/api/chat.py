@@ -53,15 +53,60 @@ async def websocket_chat(websocket: WebSocket):
 # -------------------------
 # Streaming endpoint (SSE)
 # -------------------------
-def fake_stream_generator(query: str):
-    """
-    Fake generator simulating token-by-token streaming.
-    """
-    response = pipeline.run(query)
-    tokens = [f"{word} " for word in response.split()]
-    for token in tokens:
-        yield f"data: {token}\n\n"
-        time.sleep(0.05)  # simulate real-time delay
+async def async_real_stream_generator(query: str):
+    import json
+    import httpx
+    import asyncio
+    
+    try:
+        # Run synchronous parts in threadpool to not block the loop
+        loop = asyncio.get_event_loop()
+        standalone_query = await loop.run_in_executor(None, pipeline._generate_standalone_query, query)
+        context = await loop.run_in_executor(None, pipeline._retrieve_context, standalone_query)
+        from .rag.prompts import get_chat_prompt
+        prompt = get_chat_prompt(query, history=pipeline.history, context=context)
+
+        payload = {
+            "model": pipeline.llm.model_name,
+            "messages": prompt,
+            "temperature": pipeline.llm.temperature,
+            "max_tokens": pipeline.llm.max_tokens,
+            "stream": True,
+        }
+        headers = {
+            "Content-Type": "application/json",
+            "Accept": "text/event-stream"
+        }
+        if pipeline.llm.api_key:
+            headers["Authorization"] = f"Bearer {pipeline.llm.api_key}"
+
+        full_response = ""
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            async with client.stream("POST", pipeline.llm.api_url, json=payload, headers=headers) as response:
+                response.raise_for_status()
+                async for chunk in response.aiter_lines():
+                    if chunk.startswith("data: "):
+                        data_str = chunk[6:]
+                        if data_str == "[DONE]":
+                            break
+                        try:
+                            data = json.loads(data_str)
+                            if 'choices' in data and len(data['choices']) > 0:
+                                delta = data['choices'][0].get('delta', {})
+                                if 'content' in delta:
+                                    text_chunk = delta['content']
+                                    full_response += text_chunk
+                                    safe_chunk = text_chunk.replace("\n", "\\n")
+                                    yield f"data: {safe_chunk}\n\n"
+                                    await asyncio.sleep(0.03)  # Visual ticker delay
+                        except json.JSONDecodeError:
+                            continue
+
+        await loop.run_in_executor(None, pipeline._update_history, query, full_response)
+            
+    except Exception as e:
+        yield f"data: I encountered an error: {str(e)}\n\n"
+        
     yield "data: [DONE]\n\n"
 
 @router.get("/chat/stream", tags=["Chat"])
@@ -70,7 +115,15 @@ async def chat_stream(query: str):
     Stream chatbot response in real-time using SSE.
     Example: /api/chat/stream?query=Hello
     """
-    return StreamingResponse(fake_stream_generator(query), media_type="text/event-stream")
+    return StreamingResponse(
+        async_real_stream_generator(query), 
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no"
+        }
+    )
 
 
 

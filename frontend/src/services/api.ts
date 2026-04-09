@@ -1,6 +1,6 @@
 import axios from "axios"
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
 
 // Axios instance
 const apiClient = axios.create({
@@ -43,7 +43,7 @@ export async function sendMessageStream(
   query: string,
   onMessage: (token: string) => void
 ): Promise<void> {
-  const url = `http://127.0.0.1:8000/api/chat/stream?query=${encodeURIComponent(query)}`;
+  const url = `${API_BASE_URL}/api/chat/stream?query=${encodeURIComponent(query)}`;
 
   const response = await fetch(url, {
     method: "GET",
@@ -69,7 +69,7 @@ export async function sendMessageStream(
 
       for (const line of lines) {
         if (line.startsWith("data: ")) {
-          const data = line.replace("data: ", "").trim();
+          const data = line.replace("data: ", "").replace(/\r$/, "");
           if (data === "[DONE]") {
             return;
           }
@@ -88,10 +88,10 @@ export async function sendMessageStream(
 // ----------------------------
 export class WebSocketChat {
   private ws: WebSocket | null = null
-  private onMessage: ((message: string) => void) | null = null
-  private onError: ((error: string) => void) | null = null
-  private onConnect: (() => void) | null = null
-  private onDisconnect: (() => void) | null = null
+  private onMessage: ((message: string) => void) | null | undefined = null
+  private onError: ((error: string) => void) | null | undefined = null
+  private onConnect: (() => void) | null | undefined = null
+  private onDisconnect: (() => void) | null | undefined = null
 
   connect(
     onMessage: (message: string) => void,

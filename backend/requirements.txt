@@ -13,11 +13,20 @@ redis==5.0.8
 gunicorn==23.0.0
 pandas==2.2.3
 uvicorn==0.30.6
-fastapi==0.99.1
+fastapi==0.110.0
 APScheduler==3.10.4
 typing==3.7.4.3
-pydantic==1.10.18
-
+pydantic==2.6.4
+motor==3.7.1
+pydantic-settings==2.2.1
+passlib[bcrypt]==1.7.4
+python-jose[cryptography]==3.3.0
+email-validator==2.1.0.post1
+python-multipart==0.0.9
+bcrypt==4.0.1
+bson==0.5.10
+jose==1.0.0
+print==1.3.0
 
 # For later when service is to be implemented
 # # Core dependencies

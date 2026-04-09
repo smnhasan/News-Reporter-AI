@@ -3,7 +3,8 @@
 import React from 'react'
 import { User, Bot } from 'lucide-react'
 import clsx from 'clsx'
-
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
 interface MessageBubbleProps {
   message: string
   isBot: boolean
@@ -42,13 +43,21 @@ export default function MessageBubble({ message, isBot, timestamp }: MessageBubb
             ? 'bg-blue-50 text-gray-900 ml-2' 
             : 'bg-gray-700 text-white ml-2'
         )}>
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-            {message}
-          </p>
+          {isBot ? (
+            <div className="prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:bg-gray-800 prose-pre:text-gray-100">
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {message}
+              </ReactMarkdown>
+            </div>
+          ) : (
+            <p className="text-sm leading-relaxed whitespace-pre-wrap">
+              {message}
+            </p>
+          )}
         </div>
         
         {/* Timestamp */}
-        <span className="text-xs text-gray-400 mt-1 px-2">
+        <span className="text-xs text-gray-400 mt-1 px-2" suppressHydrationWarning>
           {formatTime(timestamp)}
         </span>
       </div>

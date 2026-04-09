@@ -11,7 +11,9 @@ print(f'Sys Path: {sys.path}')
 class VectorStore:
     def __init__(self):
         self.embedding_model = Embedding()
-        self.dir = "/home/nahid/Documents/Projects/RagChat/backend/app/api/rag/db/knowledge_base"
+        import os
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        self.dir = os.path.join(current_dir, "knowledge_base")
         self.settings = Settings(
             anonymized_telemetry=False,
             is_persistent=True,
@@ -55,7 +57,8 @@ class VectorStore:
         """
         try:
             results = self.db.similarity_search_with_relevance_scores(
-                query=query
+                query=query,
+                k=11
             )
             print(f'Retrieved {len(results)} documents for query: {query}', flush=True)
             return results if results else []

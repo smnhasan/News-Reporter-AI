@@ -15,7 +15,7 @@ else
 fi
 
 echo "Activating conda environment: backend-env"
-if conda activate backend-env; then
+if conda activate news-verifyp-env; then
     echo "Conda environment activated successfully."
 else
     echo "ERROR: Failed to activate conda environment: backend-env" >&2

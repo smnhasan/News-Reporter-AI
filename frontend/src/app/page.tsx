@@ -1,26 +1,8 @@
 import Link from 'next/link'
-import { MessageCircle, Brain, Zap, Shield } from 'lucide-react'
-
+import { Brain, Zap, Shield, MessageCircle } from 'lucide-react'
 export default function ChatPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-primary-50 to-white">
-      {/* Header */}
-      <header className="py-6 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-7xl mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <MessageCircle className="h-8 w-8 text-primary-600" />
-            <h1 className="text-2xl font-bold text-gray-900">News Reporter AI</h1>
-          </div>
-          <nav className="flex space-x-6">
-            <Link href="/chat" className="text-gray-600 hover:text-primary-600 transition-colors">
-              Chat
-            </Link>
-            <Link href="/about" className="text-gray-600 hover:text-primary-600 transition-colors">
-              About
-            </Link>
-          </nav>
-        </div>
-      </header>
+    <div className="bg-gradient-to-br from-primary-50 to-white">
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
