@@ -24,7 +24,7 @@ export default function LoginPage() {
       formData.append('username', email)
       formData.append('password', password)
 
-      const response = await axios.post('http://localhost:8000/api/auth/login', formData)
+      const response = await axios.post('https://chatbot.test.nascenia.com/api-backend/api/auth/login', formData)
       
       if (response.data.access_token) {
         login(response.data.access_token)

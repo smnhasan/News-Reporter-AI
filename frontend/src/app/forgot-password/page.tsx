@@ -17,7 +17,7 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      await axios.post(`http://localhost:8000/api/auth/forgot-password?email=${encodeURIComponent(email)}`)
+      await axios.post(`https://chatbot.test.nascenia.com/api-backend/api/auth/forgot-password?email=${encodeURIComponent(email)}`)
       setIsSuccess(true)
     } catch (err: any) {
       console.error('Forgot password error:', err)

@@ -15,7 +15,7 @@ else
 fi
 
 echo "Activating conda environment: backend-env"
-if conda activate news-verifyp-env; then
+if conda activate backend-env; then
     echo "Conda environment activated successfully."
 else
     echo "ERROR: Failed to activate conda environment: backend-env" >&2
@@ -25,7 +25,7 @@ fi
 # --- Application Configuration ---
 APP_MODULE="main:app"
 HOST="0.0.0.0"
-PORT="8000"
+PORT="8008"
 WORKERS=1
 LOG_DIR="./logs"
 ACCESS_LOG="$LOG_DIR/access.log"

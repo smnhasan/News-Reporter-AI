@@ -20,7 +20,7 @@ fi
 
 # Activate conda environment
 echo "[INFO] Activating conda environment: scrapper-env"
-if conda activate scrapper-env; then
+if conda activate scrapper; then
     echo "[OK] Conda environment activated"
 else
     echo "[ERROR] Failed to activate conda environment: scrapper-env" >&2

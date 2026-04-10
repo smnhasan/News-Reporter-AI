@@ -28,7 +28,7 @@ export default function RegisterPage() {
     setIsLoading(true)
 
     try {
-      await axios.post('http://localhost:8000/api/auth/register', {
+      await axios.post('https://chatbot.test.nascenia.com/api-backend/api/auth/register', {
         email,
         full_name: fullName,
         password
